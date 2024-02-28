@@ -1,0 +1,55 @@
+# Ignore compiled Python files
+*.pyc
+*.pyo
+
+# Ignore C++ compiled files
+*.so
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore VS Code settings and cache
+.vscode/
+.vscode/settings.json
+.vscode/*.code-workspace
+
+# Ignore build artifacts
+bin/
+build/
+dist/
+develop-eggs/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Ignore unit test and coverage reports
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Ignore translations
+*.mo
+
+# Ignore Mr. Developer settings
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Ignore Rope project settings
+.ropeproject/
+
+# Ignore Django logs and translation files
+*.log
+*.pot
+
+# Ignore Sphinx documentation build output
+docs/_build/
