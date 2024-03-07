@@ -7,11 +7,11 @@
 #include <string>
 #include <sstream>
 
-#include <gzip/compress.hpp>
-#include <gzip/config.hpp>
-#include <gzip/decompress.hpp>
-#include <gzip/utils.hpp>
-#include <gzip/version.hpp>
+// #include <gzip/compress.hpp>
+// #include <gzip/config.hpp>
+// #include <gzip/decompress.hpp>
+// #include <gzip/utils.hpp>
+// #include <gzip/version.hpp>
 
 #include "pcc_module.h"
 #include "encoder.h"

@@ -1,0 +1,3 @@
+[submodule "src/modern-cpp-kafka"]
+	path = src/modern-cpp-kafka
+	url = https://github.com/morganstanley/modern-cpp-kafka.git

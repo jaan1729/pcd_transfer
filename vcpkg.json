@@ -1,0 +1,6 @@
+{
+    "name": "pcdtransfer",
+    "dependencies": [
+        "modern-cpp-kafka"
+    ]
+}

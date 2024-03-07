@@ -12,54 +12,7 @@ std::vector<std::string> split(const std::string& str, const std::string& delimi
 }
 
 
-void compress_data(const std::vector<std::string>& data, std::string& compressed_data) {
-    std::ostringstream combined_data;
-    // Start archive using Boost.Archive library
-    
-    // Serialize each string object
-    for (const auto& str : data) {
-        combined_data << str;
-        combined_data << "\n";
-    }
-    std::string combined_string = combined_data.str();
-    const char * pointer = combined_string.data();
-    std::size_t size = combined_string.size();
 
-    // Check if compressed. Can check both gzip and zlib.
-    bool c = gzip::is_compressed(pointer, size); // false
-
-    // Compress returns a std::string
-    compressed_data = gzip::compress(pointer, size);
-
-}
-
-void compress_string(const std::string& data, std::string& compressed_data) {
-    
-    const char * pointer = data.data();
-    std::size_t size = data.size();
-
-    // Check if compressed. Can check both gzip and zlib.
-    bool c = gzip::is_compressed(pointer, size); // false
-
-    // Compress returns a std::string
-    compressed_data = gzip::compress(pointer, size);
-
-}
-
-void extract_data(const std::string& compressed_data, std::vector<std::string>& data) {
-  const char * compressed_pointer = compressed_data.data();
-
-  std::string decompressed_data = gzip::decompress(compressed_pointer, compressed_data.size());
-  data = split(decompressed_data, "\n");
-
-}
-
-void extract_string(const std::string& compressed_data, std::string& decompressed_data) {
-  const char * compressed_pointer = compressed_data.data();
-
-  decompressed_data = gzip::decompress(compressed_pointer, compressed_data.size());
-
-}
 
 std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_data, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size, PccResult &pcc_res) {
   /*******************************************************************/

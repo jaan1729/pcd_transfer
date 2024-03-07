@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.10.2)
-set(CMAKE_TOOLCHAIN_FILE "/vcpkg/scripts/buildsystems/vcpkg.cmake")
+
 project(stpcc)
 
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS iostreams serialization program_options system REQUIRED)
 find_package(ZLIB REQUIRED)
 
+add_subdirectory(../modern-cpp-kafka)
 
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -15,9 +16,10 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    ${ZLIB_INCLUDE_DIRS}
-    ${GZIP_INCLUDE_DIRS}
-    /vcpkg/installed/x64-linux/include/gzip #Temporary solution to get gzip headers manually
+    ../modern-cpp-kafka/include
+    # ${ZLIB_INCLUDE_DIRS}
+    # ${GZIP_INCLUDE_DIRS}
+    # /vcpkg/installed/x64-linux/include/gzip #Temporary solution to get gzip headers manually
 )
 
 message("Boost include dirs: ${Boost_INCLUDE_DIRS}")
@@ -38,8 +40,9 @@ add_library(pcc_common src/utils.cpp
 target_link_libraries(pcc_common PUBLIC
                         ${OpenCV_LIBS}
                         ${Boost_LIBRARIES}
-                        ${ZLIB_LIBRARIES}
-                        ${GZIP}
+                        # ${ZLIB_LIBRARIES}
+                        # ${GZIP}
+                        modern-cpp-kafka-api
                         )
 
 target_include_directories(pcc_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
