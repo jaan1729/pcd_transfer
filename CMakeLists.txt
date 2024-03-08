@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.11)
 # set(CMAKE_TOOLCHAIN_FILE "/vcpkg/scripts/buildsystems/vcpkg.cmake")
 # Project name
-project(pcdtransfer)
+project(pcd_transfer)
 
 
 # Compiler options
@@ -19,11 +19,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
 find_package(pcl_conversions REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(ament_lint_auto REQUIRED)
 find_package(OpenCV REQUIRED)
+# find_package(ament_lint_auto)
 # find_package(RdKafka REQUIRED)
 
 # find_package(librdkafka REQUIRED)

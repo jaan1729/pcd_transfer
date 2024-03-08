@@ -4,7 +4,7 @@ project(stpcc)
 
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS iostreams serialization program_options system REQUIRED)
-find_package(ZLIB REQUIRED)
+# find_package(ZLIB REQUIRED)
 
 # add_subdirectory(../modern-cpp-kafka)
 

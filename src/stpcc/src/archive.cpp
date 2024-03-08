@@ -50,12 +50,12 @@ std::vector<std::vector<char>> compress_pointcloud(std::vector<point_cloud> pclo
   std::vector<int> tile_fit_lengths;
   std::vector<float> unfit_nums;
 
-  cv ::Mat* b_mat_o = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+  cv ::Mat* b_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
 
   cv::Mat* occ_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
 
-  cv::Mat* b_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
-  import_b_mat(*b_mat_o, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/b_mat.bin");
+  cv::Mat* b_mat_o = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+  import_b_mat(*b_mat_o, "/root/workspace/digiflec/ros_ws/src/pcd_transfer/src/stpcc/build/b_mat.bin");
   
   
 
@@ -151,7 +151,7 @@ std::vector<point_cloud> extract_pointcloud(const std::vector<std::vector<char>>
   std::cout<<"Ëxtracted lengths"<<std::endl;
     
   cv::Mat* b_mat_o = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
-  import_b_mat(*b_mat_o, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/b_mat.bin");
+  import_b_mat(*b_mat_o, "/root/workspace/digiflec/ros_ws/src/pcd_transfer/src/stpcc/build/b_mat.bin");
 
   // import_coefficients(coefficients, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/coefficients.bin");
   // import_occ_mat(*occ_mat, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/occ_mat.bin");
