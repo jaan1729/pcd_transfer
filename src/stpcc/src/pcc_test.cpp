@@ -155,8 +155,8 @@ int main(int argc, char** argv) {
   
   psnr = compute_loss_rate(*r_mat, restored_pcloud, pitch_precision, yaw_precision);
  
-  // output_cloud(pcloud_data, "org.ply");
-  // output_cloud(restored_pcloud, "restored.ply");
+  output_cloud(pcloud_data, "org.ply");
+  output_cloud(restored_pcloud, "restored.ply");
   std::cout << "**********************************************************" << std::endl;
   
   print_pcc_res(pcc_res);

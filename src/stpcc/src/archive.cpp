@@ -14,7 +14,7 @@ std::vector<std::string> split(const std::string& str, const std::string& delimi
 
 
 
-std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_data, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size, PccResult &pcc_res) {
+std::vector<std::vector<char>> compress_pointcloud(std::vector<point_cloud> pcloud_data, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size, PccResult &pcc_res) {
   /*******************************************************************/
   // initialization
 
@@ -24,7 +24,7 @@ std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_dat
   /*******************************************************************/
   // convert range map
 
-  std::cout << "CURRENT pcloud size: " << pcloud_data.size() << std::endl;
+  // std::cout << "CURRENT pcloud size: " << pcloud_data.size() << std::endl;
   
   // Characterize Range Map
   // floating map;
@@ -50,8 +50,14 @@ std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_dat
   std::vector<int> tile_fit_lengths;
   std::vector<float> unfit_nums;
 
-  cv ::Mat* b_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+  cv ::Mat* b_mat_o = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+
   cv::Mat* occ_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+
+  cv::Mat* b_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+  import_b_mat(*b_mat_o, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/b_mat.bin");
+  
+  
 
   // encode the occupatjon map  
   encoder::encode_occupation_mat(*f_mat, *occ_mat, tile_size, mat_div_tile_sizes);
@@ -63,30 +69,38 @@ std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_dat
 
   pcc_res.fit_times->push_back(fit_time);
 
+  // save bmat into an image
+  
+  // compare the difference between b_mat and b_mat_r
+  cv::Mat diff_mat;
+  cv::absdiff(*b_mat, *b_mat_o, diff_mat);
+  double diff_sum = cv::sum(diff_mat)[0];
+  std::cout << "Difference between b_mat and b_mat_r: " << diff_sum << std::endl;
+
   // what we need to store:
   // 1. b_mat: binary map for tile type
-  std::string serialized_b_mat;
+  std::vector<char> serialized_b_mat;
   serialize_b_mat(*b_mat, serialized_b_mat);
   delete b_mat;
 
-  std::string serialized_coefficients;
+  std::vector<char> serialized_coefficients;
   serialize_coefficients(coefficients, serialized_coefficients);
   coefficients.clear();
 
-  std::string serialized_occ_mat;
+  std::vector<char> serialized_occ_mat;
   serialize_occ_mat(*occ_mat, serialized_occ_mat);
   delete occ_mat;
 
-  std::string serialized_unfit_nums;
+  std::vector<char> serialized_unfit_nums;
   serialize_unfit_nums(unfit_nums, serialized_unfit_nums);
   unfit_nums.clear();
 
-  std::string serialized_tile_fit_lengths;
+  std::vector<char> serialized_tile_fit_lengths;
   serialize_tile_fit_lengths(tile_fit_lengths, serialized_tile_fit_lengths);
   tile_fit_lengths.clear();
   
   // 6. make a tar.gz file
-  std::vector<std::string> combined_string;
+  std::vector<std::vector<char>> combined_string;
   combined_string.push_back(serialized_b_mat);
   combined_string.push_back(serialized_coefficients);
   combined_string.push_back(serialized_occ_mat);
@@ -101,17 +115,17 @@ std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_dat
   return combined_string;
 }
 
-std::vector<point_cloud> extract_pointcloud(const std::vector<std::string>& combined_strings, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size){
+std::vector<point_cloud> extract_pointcloud(const std::vector<std::vector<char>>& combined_strings, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size){
   // 2. Unarchive the compressed file
   // std::vector<std::string> combined_string;
   // extract_data(serialized_data, combined_string);
   // std::cout<<"Data Extracted"<<std::endl;
   // 3. Seperate the data according to different values
-  std::string serialized_b_mat = combined_strings[0];
-  std::string serialized_coefficients = combined_strings[1];
-  std::string serialized_occ_mat = combined_strings[2];
-  std::string serialized_unfit_nums = combined_strings[3];
-  std::string serialized_tile_fit_lengths = combined_strings[4];
+  std::vector<char> serialized_b_mat = combined_strings[0];
+  std::vector<char> serialized_coefficients = combined_strings[1];
+  std::vector<char> serialized_occ_mat = combined_strings[2];
+  std::vector<char> serialized_unfit_nums = combined_strings[3];
+  std::vector<char> serialized_tile_fit_lengths = combined_strings[4];
 
   // delete combined_string;
 
@@ -131,10 +145,26 @@ std::vector<point_cloud> extract_pointcloud(const std::vector<std::string>& comb
   deserialize_occ_mat(*occ_mat, serialized_occ_mat);
   std::cout<<"Ëxtracted occ mat"<<std::endl;
   deserialize_unfit_nums(unfit_nums, serialized_unfit_nums);
+  
   std::cout<<"Ëxtracted unfit nums"<<std::endl;
   deserialize_tile_fit_lengths(tile_fit_lengths, serialized_tile_fit_lengths);
   std::cout<<"Ëxtracted lengths"<<std::endl;
     
+  cv::Mat* b_mat_o = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
+  import_b_mat(*b_mat_o, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/b_mat.bin");
+
+  // import_coefficients(coefficients, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/coefficients.bin");
+  // import_occ_mat(*occ_mat, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/occ_mat.bin");
+
+  // import_unfit_nums(unfit_nums, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/unfit_nums.bin");
+  // import_tile_fit_lengths(tile_fit_lengths, "/root/workspace/digiflec/ros_ws/src/pcdtransfer/src/stpcc/build/tile_fit_lengths.bin");
+
+
+  // compare the difference between b_mat and b_mat_r
+  cv::Mat diff_mat;
+  cv::absdiff(*b_mat, *b_mat_o, diff_mat);
+  double diff_sum = cv::sum(diff_mat)[0];
+  std::cout << "Difference between b_mat and b_mat_r: " << diff_sum << std::endl;
 
   // reconstruct the range image
   cv::Mat* r_mat = new cv::Mat(row, col, CV_32FC1, 0.f);

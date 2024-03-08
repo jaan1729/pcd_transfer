@@ -11,10 +11,10 @@ PCD_Receiver::PCD_Receiver() : Node("pcd_receiver") {
   std::string topic_name = "pcd_topic";
 
   // Create Kafka properties and consumer
-  std::map<std::string, std::string> config = {{"bootstrap.servers", kafka_brokers},
-                                              {"max.partition.fetch.bytes", "20485760"}};
+  
   kafka::Properties props({{"bootstrap.servers", {kafka_brokers}},
-                                              {"max.partition.fetch.bytes", {"20485760"}}
+                            {"max.pool.records", {"1"}}
+                                              // {"max.partition.fetch.bytes", {"20485760"}}
                                               // {"fetch.min.bytes", {"1048576"}}, // Adjust minimum fetch size (optional)
                                               // {"fetch.size", {"2097152"}} // Adjust fetch size (optional)});
 });
@@ -34,7 +34,7 @@ PCD_Receiver::PCD_Receiver() : Node("pcd_receiver") {
   // auto timer = create_wall_timer(1000ms, std::bind(&PCD_Receiver::consumePcloudData, this));
 
   // Create a publisher for PointCloud2 messages
-  publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("pointcloud", 10);
+  publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("pointcloud_op", 10);
 
   // Register shutdown callback (optional)
   rclcpp::on_shutdown([this]() {
@@ -46,33 +46,51 @@ PCD_Receiver::PCD_Receiver() : Node("pcd_receiver") {
 void PCD_Receiver::consumePcloudData() {
   while (rclcpp::ok()) {
     // Poll for messages from Kafka topic
-    std::cout << "In consumePcloudData" << std::endl;
-    auto records = consumer_->poll(std::chrono::milliseconds(1000));
+    
+    auto records = consumer_->poll(std::chrono::milliseconds(100));
 
     // Process messages
     for (const auto& record : records) {
       // Extract serialized point cloud data from message value
-      const std::string& serialized_data = record.value().toString();
-      std::cout << "Got a new message..." << std::endl;
-      // std::cout << serialized_data << std::endl;
+      const auto message = record.value();
+      auto data = message.data();
+      auto size = message.size();
+      const auto* beg = reinterpret_cast<const char*>(data);
+      std::vector<char> serialized_data(beg, beg + size);
+      
 
+      std::cout << "Got a new message..." << std::endl;
+      std::cout << "Size of serialized_data: " << serialized_data.size() << std::endl;
+      
+      std::vector<std::vector<char>> combined_strings = deserialize(serialized_data);
+      
+      for (const auto& str : combined_strings) {
+        std::cout << "Size of combined_strings[" << &str - &combined_strings[0] << "]: " << str.size() << std::endl;
+      }
+      convertPcloudToPointCloud2(combined_strings);
       // Process and publish the point cloud data
-      extractPointCloud(serialized_data);
+      // convertPcloudToPointCloud2(combined_strings);
     }
   }
 }
 
 // Implementations for extractPointCloud, convertPcloudToPointCloud2, and stop_kafka_consumer (assuming they are defined in pcc_common modules)
-void PCD_Receiver::extractPointCloud(const std::string& serialized_data) {
+void PCD_Receiver::extractPointCloud(const std::vector<char>& serialized_data) {
   // ... (implementation using pcc_common modules)
-    std::cout << "Size of serialized_data: " << serialized_data.size() << std::endl;
+    
+    // save the serialized data to a file
+    
     // std::cout << "serialized_data: " << serialized_data << std::endl;
-    std::vector<std::string> combined_strings = deserialize(serialized_data);
+    std::vector<std::vector<char>> combined_strings = deserialize(serialized_data);
+    
+    // for (const auto& str : combined_strings) {
+    //   std::cout << str << std::endl;
+    // }
     
     convertPcloudToPointCloud2(combined_strings);
 }
 
-void PCD_Receiver::convertPcloudToPointCloud2(const std::vector<std::string>& combined_strings) {
+void PCD_Receiver::convertPcloudToPointCloud2(const std::vector<std::vector<char>>& combined_strings) {
   // ... (implementation using pcc_common modules)
   sensor_msgs::msg::PointCloud2 msg;
 

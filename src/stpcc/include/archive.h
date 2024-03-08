@@ -28,8 +28,8 @@ void compress_data(const std::vector<std::string>& data, std::string& serialized
 
 void extract_data(const std::string& serialized_data, std::vector<std::string>& data);
 
-std::vector<std::string> compress_pointcloud(std::vector<point_cloud> pcloud_data, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size, PccResult &pcc_res);
+std::vector<std::vector<char>> compress_pointcloud(std::vector<point_cloud> pcloud_data, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size, PccResult &pcc_res);
 
-std::vector<point_cloud> extract_pointcloud(const std::vector<std::string>& combined_strings, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size);
+std::vector<point_cloud> extract_pointcloud(const std::vector<std::vector<char>>& combined_strings, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size);
 
 #endif

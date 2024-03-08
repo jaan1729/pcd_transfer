@@ -26,8 +26,8 @@ public:
 
 private:
   void consumePcloudData();
-  void extractPointCloud(const std::string& serialized_data);
-  void convertPcloudToPointCloud2(const std::vector<std::string>& combined_strings);
+  void extractPointCloud(const std::vector<char>& serialized_data);
+  void convertPcloudToPointCloud2(const std::vector<std::vector<char>>& combined_strings);
   void stop_kafka_consumer();
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;

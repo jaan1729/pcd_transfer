@@ -53,8 +53,8 @@ include_directories(
 
 
 # Add executables
-add_executable(pcd_sender src/pcd_sender.cpp) 
-add_executable(pcd_receiver src/pcd_receiver.cpp)
+# add_executable(pcd_sender src/pcd_sender.cpp) 
+# add_executable(pcd_receiver src/pcd_receiver.cpp)
 
 add_executable(pcd_sender_kafka src/pcd_sender_kafka.cpp)
 add_executable(pcd_receiver_kafka src/pcd_receiver_kafka.cpp)
@@ -98,8 +98,8 @@ set(pcd_receiver_kafka_dependencies
 
 
 
-ament_target_dependencies(pcd_sender ${pcd_sender_dependencies})
-ament_target_dependencies(pcd_receiver ${pcd_receiver_dependencies})
+# ament_target_dependencies(pcd_sender ${pcd_sender_dependencies})
+# ament_target_dependencies(pcd_receiver ${pcd_receiver_dependencies})
 
 ament_target_dependencies(pcd_sender_kafka ${pcd_sender_kafka_dependencies} ${LIBRDKAFKA_LIBRARY_DIR})
 ament_target_dependencies(pcd_receiver_kafka ${pcd_receiver_kafka_dependencies} ${LIBRDKAFKA_LIBRARY_DIR})
@@ -112,8 +112,8 @@ set(pcd_common_libraries
   pcc_common
 )
 
-target_link_libraries(pcd_sender ${pcd_common_libraries} )
-target_link_libraries(pcd_receiver ${pcd_common_libraries} )
+# target_link_libraries(pcd_sender ${pcd_common_libraries} )
+# target_link_libraries(pcd_receiver ${pcd_common_libraries} )
 target_link_libraries(pcd_sender_kafka ${pcd_common_libraries} modern-cpp-kafka-api)
 target_link_libraries(pcd_receiver_kafka ${pcd_common_libraries} modern-cpp-kafka-api)
 
@@ -121,8 +121,8 @@ target_include_directories(pcd_sender_kafka PUBLIC src/modern-cpp-kafka/include 
 target_include_directories(pcd_receiver_kafka PUBLIC include src/modern-cpp-kafka/include ${LIBRDKAFKA_INCLUDE_DIR})
 
 # Install executables
-install(TARGETS pcd_sender DESTINATION lib/${PROJECT_NAME})
-install(TARGETS pcd_receiver DESTINATION lib/${PROJECT_NAME})
+# install(TARGETS pcd_sender DESTINATION lib/${PROJECT_NAME})
+# install(TARGETS pcd_receiver DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS pcd_sender_kafka DESTINATION lib/${PROJECT_NAME})
 install(TARGETS pcd_receiver_kafka DESTINATION lib/${PROJECT_NAME})

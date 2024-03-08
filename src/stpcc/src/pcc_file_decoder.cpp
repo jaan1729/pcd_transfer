@@ -2,61 +2,13 @@
  * This is an example of 3d lidar compression.
  * */
 
-
-
-std::vector<point_cloud> decompress_pointcloud(const std::string& serialized_data, int row, int col, float pitch_precision, float yaw_precision, float threshold, int tile_size){
-  // 2. Unarchive the compressed file
-  std::vector<std::string> combined_string;
-  extract_data(serialized_data, combined_string);
-  std::cout<<"Data Extracted"<<std::endl;
-  // 3. Seperate the data according to different values
-  std::string serialized_b_mat = combined_string[0];
-  std::string serialized_coefficients = combined_string[1];
-  std::string serialized_occ_mat = combined_string[2];
-  std::string serialized_unfit_nums = combined_string[3];
-  std::string serialized_tile_fit_lengths = combined_string[4];
-
-  // delete combined_string;
-
-  // 4. Decode matrices from string data
-  int mat_div_tile_sizes[] = {row/tile_size, col/tile_size};
-  std::vector<cv::Vec4f> coefficients;
-  std::vector<int> tile_fit_lengths;
-  std::vector<float> unfit_nums;
-
-  cv::Mat* b_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
-  cv::Mat* occ_mat = new cv::Mat(row/tile_size, col/tile_size, CV_32SC1, 0.f);
-  std::cout<<"Created Matrices"<<std::endl;
-  deserialize_b_mat(*b_mat, serialized_b_mat);
-  std::cout<<"Ëxtracted bmat"<<std::endl;
-  deserialize_coefficients(coefficients, serialized_coefficients);
-  std::cout<<"Ëxtracted coefficiants"<<std::endl;
-  deserialize_occ_mat(*occ_mat, serialized_occ_mat);
-  std::cout<<"Ëxtracted occ mat"<<std::endl;
-  deserialize_unfit_nums(unfit_nums, serialized_unfit_nums);
-  std::cout<<"Ëxtracted unfit nums"<<std::endl;
-  deserialize_tile_fit_lengths(tile_fit_lengths, serialized_tile_fit_lengths);
-  std::cout<<"Ëxtracted lengths"<<std::endl;
-    
-
-  // reconstruct the range image
-  cv::Mat* r_mat = new cv::Mat(row, col, CV_32FC1, 0.f);
-  // decoding
-  decoder::single_channel_decode(*r_mat, *b_mat, mat_div_tile_sizes, coefficients, 
-                                 *occ_mat, tile_fit_lengths, unfit_nums, tile_size);
-
-  delete b_mat;
-  delete occ_mat;
-
-  std::vector<point_cloud> restored_pcloud;
-  restore_pcloud(*r_mat, pitch_precision, yaw_precision, restored_pcloud);
-  
-  delete r_mat;
-  
-  
-  return restored_pcloud;
-}
-
+#include <stdlib.h>
+#include "pcc_module.h"
+#include "encoder.h"
+#include "decoder.h"
+#include "io.h"
+#include "serialize.h"
+#include "archive.h"
 
 // int main(int argc, char** argv) { 
   

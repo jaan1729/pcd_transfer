@@ -1,15 +1,17 @@
 #include "io.h"
 #include <sstream>
 #include <zlib.h>
-void serialize_b_mat(const cv::Mat& b_mat, std::string& serialized_data) {
-    std::ostringstream oss;
+
+
+void serialize_b_mat(const cv::Mat& b_mat, std::vector<char>& serialized_data) {
+    
 
     int cnt = 0;
     char code = 0;
     for (int row = 0; row < b_mat.rows; row++) {
         for (int col = 0; col < b_mat.cols; col++) {
             if (cnt == 8) {
-                oss.write(&code, sizeof(code));
+                serialized_data.push_back(code); // Append to the vector
                 cnt = 0;
                 code = 0;
             }
@@ -19,25 +21,29 @@ void serialize_b_mat(const cv::Mat& b_mat, std::string& serialized_data) {
         }
     }
     if (cnt > 0) {
-        oss.write(&code, sizeof(code));
+        serialized_data.push_back(code); // Append the final code
     }
-
-    serialized_data = oss.str();
 }
 
-void deserialize_b_mat(cv::Mat& b_mat, const std::string& serialized_data) {
-    std::istringstream iss(serialized_data);
-
+void deserialize_b_mat(cv::Mat& b_mat, const std::vector<char>& serialized_data) {
+    
     int cnt = 0;
     char code = 0;
-    iss.read(&code, 1);
+
+    int data_index = 0;
+    // Read first byte (assuming it's already available in the vector)
+    code = serialized_data[data_index++];
+
     for (int row = 0; row < b_mat.rows; row++) {
         for (int col = 0; col < b_mat.cols; col++) {
             if (cnt == 8) {
-                iss.read(&code, sizeof(code));
+                // Read next byte if needed
+                if (data_index < serialized_data.size()) {
+                    code = serialized_data[data_index++];
+                }
                 cnt = 0;
             }
-            if ((code >> cnt) & 1 == 1) {
+            if ((code >> cnt & 1) == 1) {
                 b_mat.at<int>(row, col) = 1;
             } else {
                 b_mat.at<int>(row, col) = 0;
@@ -47,125 +53,167 @@ void deserialize_b_mat(cv::Mat& b_mat, const std::string& serialized_data) {
     }
 }
 
-void serialize_coefficients(const std::vector<cv::Vec4f>& coefficients, std::string& serialized_data) {
-    std::ostringstream oss;
 
-    for (auto c : coefficients) {
-        oss.write(reinterpret_cast<const char*>(&c[0]), sizeof(c[0]));
-        oss.write(reinterpret_cast<const char*>(&c[1]), sizeof(c[1]));
-        oss.write(reinterpret_cast<const char*>(&c[2]), sizeof(c[2]));
-        oss.write(reinterpret_cast<const char*>(&c[3]), sizeof(c[3]));
+
+
+void serialize_coefficients(const std::vector<cv::Vec4f>& coefficients, std::vector<char>& serialized_data) {
+    int num_coefficients = coefficients.size();
+    int bytes_per_coefficient = 4 * sizeof(float); // Each Vec4f has 4 floats
+
+    // Calculate total required buffer size
+    serialized_data.resize(num_coefficients * bytes_per_coefficient);
+
+    char* data_ptr = serialized_data.data(); // Pointer to the start of the buffer
+
+    for (const auto& c : coefficients) {
+        // Efficiently copy each float directly into the buffer
+        std::memcpy(data_ptr, &c[0], sizeof(float));
+        data_ptr += sizeof(float);
+        std::memcpy(data_ptr, &c[1], sizeof(float));
+        data_ptr += sizeof(float);
+        std::memcpy(data_ptr, &c[2], sizeof(float));
+        data_ptr += sizeof(float);
+        std::memcpy(data_ptr, &c[3], sizeof(float));
+        data_ptr += sizeof(float);
     }
-
-    serialized_data = oss.str();
 }
 
-void deserialize_coefficients(std::vector<cv::Vec4f>& coefficients, const std::string& serialized_data) {
-    std::istringstream iss(serialized_data);
 
-    float c[4];
-    while (iss.read(reinterpret_cast<char*>(c), sizeof(float) * 4)) {
+void deserialize_coefficients(std::vector<cv::Vec4f>& coefficients, const std::vector<char>& serialized_data) {
+    int num_elements = serialized_data.size() / sizeof(float);
+    if (num_elements % 4 != 0) {
+        std::cerr << "Invalid serialized data size. Data size must be a multiple of 4 bytes (float size)." << std::endl;
+        return;
+    }
+
+    const char* data_ptr = serialized_data.data(); // Pointer to the start of the byte array
+
+    for (int i = 0; i < num_elements; i += 4) {
+        float c[4];
+        // Efficiently copy data from the buffer directly into the float array
+        std::memcpy(c, data_ptr, sizeof(float) * 4);
+        data_ptr += sizeof(float) * 4;
         coefficients.push_back(cv::Vec4f(c[0], c[1], c[2], c[3]));
     }
 }
 
-void serialize_occ_mat(const cv::Mat& occ_mat, std::string& serialized_data) {
-    std::ostringstream oss;
+void serialize_occ_mat(const cv::Mat& occ_mat, std::vector<char>& serialized_data) {
+    int num_elements = occ_mat.rows * occ_mat.cols;
 
-    unsigned short code;
+    // Calculate required buffer size
+    serialized_data.resize(num_elements * sizeof(unsigned short));
+
+    unsigned short* data_ptr = reinterpret_cast<unsigned short*>(serialized_data.data()); // Pointer to buffer
+
     for (int row = 0; row < occ_mat.rows; row++) {
         for (int col = 0; col < occ_mat.cols; col++) {
-            code = (unsigned short)occ_mat.at<int>(row, col);
-            oss.write(reinterpret_cast<const char*>(&code), sizeof(code));
-        }
-    }
-
-    serialized_data = oss.str();
-}
-
-void deserialize_occ_mat(cv::Mat& occ_mat, const std::string& serialized_data) {
-    std::istringstream iss(serialized_data);
-
-    unsigned short code = 0;
-    for (int row = 0; row < occ_mat.rows; row++) {
-        for (int col = 0; col < occ_mat.cols; col++) {
-            iss.read(reinterpret_cast<char*>(&code), sizeof(code));
-            occ_mat.at<int>(row, col) = code;
+            *data_ptr++ = (unsigned short)occ_mat.at<int>(row, col);
         }
     }
 }
 
-void serialize_unfit_nums(const std::vector<float>& data, std::string& serialized_data) {
-    std::ostringstream oss;
+void deserialize_occ_mat(cv::Mat& occ_mat, const std::vector<char>& serialized_data) {
+    int num_elements = serialized_data.size() / sizeof(unsigned short);
+    if (num_elements != occ_mat.rows * occ_mat.cols) {
+        std::cerr << "Invalid serialized data size. Expected " << (occ_mat.rows * occ_mat.cols) << " elements, got " << num_elements << " elements." << std::endl;
+        return;
+    }
+
+    const unsigned short* data_ptr = reinterpret_cast<const unsigned short*>(serialized_data.data()); // Pointer to buffer
+
+    for (int row = 0; row < occ_mat.rows; row++) {
+        for (int col = 0; col < occ_mat.cols; col++) {
+            occ_mat.at<int>(row, col) = *data_ptr++;
+        }
+    }
+}
+
+
+void serialize_unfit_nums(const std::vector<float>& data, std::vector<char>& serialized_data) {
+    // Precalculate required buffer size for efficiency
+    int buffer_size = data.size() * sizeof(unsigned short);
+    serialized_data.resize(buffer_size);
+
+    unsigned short* data_ptr = reinterpret_cast<unsigned short*>(serialized_data.data()); // Pointer to buffer
 
     for (auto d : data) {
         unsigned short quantized_d = (unsigned short)(d * 256);
-        oss.write(reinterpret_cast<const char*>(&quantized_d), sizeof(quantized_d));
+        *data_ptr++ = quantized_d;
     }
-
-    serialized_data = oss.str();
 }
 
-void deserialize_unfit_nums(std::vector<float>& data, const std::string& serialized_data) {
-    std::istringstream iss(serialized_data);
+void deserialize_unfit_nums(std::vector<float>& data, const std::vector<char>& serialized_data) {
+    int num_elements = serialized_data.size() / sizeof(unsigned short);
 
-    unsigned short quantized_d;
-    while (iss.read(reinterpret_cast<char*>(&quantized_d), sizeof(quantized_d))) {
-        float d = ((float)quantized_d) / 256.0f;
+    const unsigned short* data_ptr = reinterpret_cast<const unsigned short*>(serialized_data.data()); // Pointer to buffer
+
+    for (int i = 0; i < num_elements; i++) {
+        float d = ((float)(*data_ptr++)) / 256.0f;
         data.push_back(d);
     }
 }
 
-void serialize_tile_fit_lengths(const std::vector<int>& data, std::string& serialized_data) {
-    std::ostringstream oss;
+
+void serialize_tile_fit_lengths(const std::vector<int>& data, std::vector<char>& serialized_data) {
+    int num_elements = data.size();
+    // Precalculate buffer size for efficiency
+    int buffer_size = num_elements * sizeof(unsigned short);
+    serialized_data.resize(buffer_size);
+
+    unsigned short* data_ptr = reinterpret_cast<unsigned short*>(serialized_data.data()); // Pointer to buffer
 
     for (auto d : data) {
-        unsigned short quantized_d = (unsigned short)(d);
-        oss.write(reinterpret_cast<const char*>(&quantized_d), sizeof(quantized_d));
-    }
-
-    serialized_data = oss.str();
-}
-
-void deserialize_tile_fit_lengths(std::vector<int>& data, const std::string& serialized_data) {
-    std::istringstream iss(serialized_data);
-
-    unsigned short quantized_d;
-    while (iss.read(reinterpret_cast<char*>(&quantized_d), sizeof(quantized_d))) {
-        data.push_back(quantized_d);
+        *data_ptr++ = (unsigned short)d; // Cast to unsigned short for serialization
     }
 }
 
-void serialize_plane_offsets(const std::vector<std::vector<float>>& data, std::string& serialized_data) {
-    std::ostringstream oss;
+void deserialize_tile_fit_lengths(std::vector<int>& data, const std::vector<char>& serialized_data) {
+    int num_elements = serialized_data.size() / sizeof(unsigned short);
 
-    for (auto vec : data) {
-        for (auto d : vec) {
-            oss.write(reinterpret_cast<const char*>(&d), sizeof(d));
-        }
-    }
+    const unsigned short* data_ptr = reinterpret_cast<const unsigned short*>(serialized_data.data()); // Pointer to buffer
 
-    serialized_data = oss.str();
-}
-
-void deserialize_plane_offsets(std::vector<std::vector<float>>& data, const std::string& serialized_data, int size) {
-    std::istringstream iss(serialized_data);
-
-    std::vector<float> vec;
-    float d;
-    while (iss.read(reinterpret_cast<char*>(&d), sizeof(d))) {
-        vec.push_back(d);
-        if (vec.size() == size) {
-            data.push_back(std::vector<float>(vec));
-            vec.clear();
-        }
+    for (int i = 0; i < num_elements; i++) {
+        data.push_back(*data_ptr++);
     }
 }
+
+void serialize_plane_offsets(const std::vector<std::vector<float>>& data, std::vector<char>& serialized_data) {
+    // Calculate total number of floats to serialize
+    int num_floats = 0;
+    for (const auto& vec : data) {
+        num_floats += vec.size();
+    }
+
+    // Resize the buffer to hold all floats
+    serialized_data.resize(num_floats * sizeof(float));
+
+    float* data_ptr = reinterpret_cast<float*>(serialized_data.data()); // Pointer to buffer
+
+    for (const auto& vec : data) {
+        std::memcpy(data_ptr, &vec[0], vec.size() * sizeof(float)); // Efficiently copy floats
+        data_ptr += vec.size();
+    }
+}
+
+void deserialize_plane_offsets(std::vector<std::vector<float>>& data, const std::vector<char>& serialized_data, int size) {
+    int num_floats = serialized_data.size() / sizeof(float);
+
+    const float* data_ptr = reinterpret_cast<const float*>(serialized_data.data()); // Pointer to buffer
+
+    int floats_read = 0;
+    while (floats_read < num_floats) {
+        std::vector<float> vec(data_ptr, data_ptr + size); // Create a vector from the buffer
+        data.push_back(vec);
+        data_ptr += size;
+        floats_read += size;
+    }
+}
+
 
 void serialize_filenames(const std::vector<std::string>& data, std::string& serialized_data) {
     std::ostringstream oss;
 
-    for (auto str : data)
+    for (const auto& str : data)
         oss << str << std::endl;
 
     serialized_data = oss.str();
@@ -192,46 +240,101 @@ std::string escapeNewlines(const std::string& str) {
     return escapedStr;
 }
 
-// **Serialization**
-std::string serialize(const std::vector<std::string>& data) {
-    std::stringstream ss;
-    ss << data.size() << '\n';
+// // **Serialization**
+// std::vector<char> serialize(const std::vector<std::vector<char>>& data) {
+//     std::vector<char> serialized_data;
+
+//     // Calculate total size needed for lengths, buffer, and null terminators
+//     size_t total_size = sizeof(size_t); // Start with size for vector length
+
+//     for (const auto& str : data) {
+//         total_size += sizeof(size_t) + str.size() + 1; // Size, string, null terminator
+//     }
+
+//     serialized_data.reserve(total_size); // Pre-allocate for efficiency
+
+//     // Append vector length
+//     serialized_data.insert(serialized_data.end(), reinterpret_cast<char*>(&total_size), reinterpret_cast<char*>(&total_size) + sizeof(size_t));
+
+//     // Append each string with its size
+//     for (const auto& str : data) {
+//         size_t str_size = str.size();
+//         serialized_data.insert(serialized_data.end(), reinterpret_cast<char*>(&str_size), reinterpret_cast<char*>(&str_size) + sizeof(size_t));
+//         serialized_data.insert(serialized_data.end(), str.begin(), str.end());
+//         // serialized_data.push_back('\0'); // Add null terminator
+//     }
+//     serialized_data.push_back('\0'); // Add null terminator
+//     return serialized_data;
+// }
+
+// std::vector<std::vector<char>> deserialize(const std::vector<char>& data) {
+//     std::vector<std::vector<char>> result;
+
+//     const char* data_ptr = data.data(); // Pointer to the start of the buffer
+
+//     // Read the vector length
+//     size_t vec_length = *reinterpret_cast<const size_t*>(data_ptr);
+//     data_ptr += sizeof(size_t);
+
+//     for (size_t i = 0; i < vec_length; ++i) {
+//         // Read the string size
+//         size_t str_size = *reinterpret_cast<const size_t*>(data_ptr);
+//         data_ptr += sizeof(size_t);
+
+//         // Read the string
+//         std::vector<char> str(data_ptr, data_ptr + str_size);
+//         data_ptr += str_size;
+
+//         result.push_back(str);
+//     }
+
+//     return result;
+// }
+
+
+
+
+// Serialization function
+std::vector<char> serialize(const std::vector<std::vector<char>>& data) {
+    std::vector<char> serialized_data;
+
+    // Serialize the vector length
+    size_t vec_length = data.size();
+    serialized_data.insert(serialized_data.end(), reinterpret_cast<const char*>(&vec_length), reinterpret_cast<const char*>(&vec_length) + sizeof(size_t));
 
     for (const auto& str : data) {
-        ss << escapeNewlines(str).size() << '\n'; // Store escaped string's size
-        ss << escapeNewlines(str) << '\n';
+        // Serialize the string size
+        size_t str_size = str.size();
+        serialized_data.insert(serialized_data.end(), reinterpret_cast<const char*>(&str_size), reinterpret_cast<const char*>(&str_size) + sizeof(size_t));
+
+        // Serialize the string
+        serialized_data.insert(serialized_data.end(), str.begin(), str.end());
     }
-    return ss.str();
+
+    return serialized_data;
 }
 
-std::vector<std::string> deserialize(const std::string& data) {
-    std::vector<std::string> result;
-    std::stringstream ss(data);
+// Deserialization function
+std::vector<std::vector<char>> deserialize(const std::vector<char>& serialized_data) {
+    std::vector<std::vector<char>> result;
 
-    size_t vectorSize;
-    ss >> vectorSize;
+    const char* data_ptr = serialized_data.data(); // Pointer to the start of the buffer
 
-    // Skip the newline character after reading vectorSize
-    ss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    // Read the vector length
+    size_t vec_length = *reinterpret_cast<const size_t*>(data_ptr);
+    data_ptr += sizeof(size_t);
 
-    for (size_t i = 0; i < vectorSize; ++i) {
-        size_t strSize;
-        std::string str;
-        ss >> strSize; 
-        ss.ignore(); // Skip the newline character after reading strSize
-        std::getline(ss, str); // Read the entire string (accounts for spaces)
+    for (size_t i = 0; i < vec_length; ++i) {
+        // Read the string size
+        size_t str_size = *reinterpret_cast<const size_t*>(data_ptr);
+        data_ptr += sizeof(size_t);
 
-        // Unescape newline characters
-        std::string unescapedStr;
-        for (size_t i = 0; i < str.size(); ++i) {
-            if (str[i] == '\\' && i + 1 < str.size() && str[i + 1] == 'n') {
-                unescapedStr += '\n';
-                i++; // Skip the escaped '\n'
-            } else {
-                unescapedStr += str[i];
-            }
-        }
-        result.push_back(unescapedStr);
+        // Read the string
+        std::vector<char> str(data_ptr, data_ptr + str_size);
+        data_ptr += str_size;
+
+        result.push_back(str);
     }
+
     return result;
 }

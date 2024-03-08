@@ -72,29 +72,28 @@ int main(int argc, char** argv) {
   col = ((col + tile_size-1)/tile_size)*tile_size;
 
   
-  std::vector<std::string> combined_strings = compress_pointcloud(pcloud_data, row, col, pitch_precision, yaw_precision, threshold, tile_size, pcc_res);
+  std::vector<std::vector<char>> combined_strings = compress_pointcloud(pcloud_data, row, col, pitch_precision, yaw_precision, threshold, tile_size, pcc_res);
 
     
 
-    
+  // std::string serialized_data;
+  // std::string serialized_data = serialize(combined_strings);
 
-    // std::string serialized_data;
-    std::string serialized_data = serialize(combined_strings);
+  // deserialize data
+  // std::vector<std::string> extracted_strings = deserialize(serialized_data);
 
-    // deserialize data
-    std::vector<std::string> extracted_strings = deserialize(serialized_data);
+  // for (const auto& str : combined_strings) {
+  //     std::cout << "Size of combined_strings[" << &str - &combined_strings[0] << "]: " << str.size() << std::endl;
+  // }
 
-    for (const auto& str : combined_strings) {
-        std::cout << "Size of combined_strings[" << &str - &combined_strings[0] << "]: " << str.size() << std::endl;
-    }
+  // for (const auto& str : extracted_strings) {
+  //     std::cout << "Size of extracted_strings[" << &str - &extracted_strings[0] << "]: " << str.size() << std::endl;
+      
+  // }
+  
+  std::vector<point_cloud> restored_pcloud = extract_pointcloud(combined_strings, row, col, pitch_precision, yaw_precision, threshold, tile_size);
 
-    for (const auto& str : extracted_strings) {
-        std::cout << "Size of extracted_strings[" << &str - &extracted_strings[0] << "]: " << str.size() << std::endl;
-        
-    }
-
-    std::vector<point_cloud> restored_pcloud = extract_pointcloud(extracted_strings, row, col, pitch_precision, yaw_precision, threshold, tile_size);
-
+  // TODO: calculate the snr, store it in pcc_res and print it here
     
 }
 
